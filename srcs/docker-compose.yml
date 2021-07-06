@@ -1,0 +1,78 @@
+version: "3"
+
+services:
+  db: 
+    image: mariadb:mariadb
+    build:
+      dockerfile: Dockerfile
+      context: ./mariadb
+    container_name: db
+    volumes:
+      - dbdata_v:/var/lib/mysql/
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+    networks:
+      - inception
+   
+  wordpress:
+    depends_on:
+      - db
+    container_name: wordpress
+    image: wordpress:wordpress
+    build:
+     dockerfile: Dockerfile
+     context: ./wp
+    volumes:
+      - wordpress_v:/var/www/html
+    ports:
+      - "9000:80"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_TABLE_PREFIX: wp_
+    networks:
+      - inception
+
+  nginx:
+    depends_on:
+      - wordpress
+      - db
+    image: nginx:nginx
+    build:
+      dockerfile: Dockerfile
+      context: ./nginx
+    container_name: nginx
+    ports:
+      - "443:443"
+    restart: always
+    volumes:
+      - wordpress_v:/var/www/html
+    networks:
+      - inception
+
+networks:
+  inception:
+      
+
+volumes:
+  dbdata_v:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: '/home/manon/data/mariadb'
+
+  wordpress_v:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: '/home/manon/data/wordpress'
